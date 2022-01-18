@@ -1,0 +1,22 @@
+.main {
+    height: 20px;
+    width: 20px;
+    border: 3px solid #525252;
+    font-size: 12px;
+    color: white;
+}
+
+.no-active {
+    border-color: grey;
+    background-color: white;
+}
+
+.selected {
+background-color: #5F00EE;
+border: none
+}
+
+.icons {
+    position: relative;
+    right: 1px;
+}

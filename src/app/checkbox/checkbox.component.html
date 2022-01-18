@@ -1,0 +1,6 @@
+<button class="main" [disabled]="disabled"
+  [ngClass]="{
+     'no-active' : disabled,
+     'selected': !disabled && state == 0 || state == 1}" 
+  (click)="onClick()"><fa-icon class="icons"  *ngIf="value" [icon]="value"></fa-icon>
+</button>

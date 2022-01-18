@@ -1,1 +1,90 @@
-/* You can add global styles to this file, and also import other style files */
+body {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+ 
+*{
+  box-sizing:inherit;
+}
+.bold {
+  font-weight: bold;
+  color: green;
+}
+.wrap-table {
+  background-color: #000000;
+  max-width: 70%;
+  margin: 0 auto;
+  min-height: 69vh;
+  display: flex;
+  flex-direction: column;
+/*   align-items: flex-end; */
+}
+
+.checkbox {
+    position: absolute;
+    left: 16px;
+    top: 6px;
+}
+table {
+  border-collapse: collapse;
+  margin: 0 auto;
+  width: 96%;
+  font-size: 13px;
+  position: relative;
+  top: 15px
+}
+td {
+  border: none;
+}
+td:empty::after{
+  content: "\00a0";
+}
+th,td {
+  padding: 8px;
+  text-align: center;
+  color: #D6D6D6;
+}
+th {
+  background-color: #333333;
+}
+tr {
+  max-height: 30px; 
+  border-bottom: 1px solid grey; 
+  background-color: #121212;
+  cursor: pointer;
+}
+img {
+  max-height: 27px;
+  width: 112px;
+  object-fit: contain;
+  margin-top: 5px;
+  margin-left: 70px;
+}
+.btn-wrap {
+  margin-top: 22px;
+  margin-right: 13px;
+  width: 17%;
+  display: flex;
+  justify-content: space-around;
+}
+button {
+  color: grey;
+    border: 0.5px, solid,  #999;
+    background-color: black;
+ 
+}
+.selected-row{
+    background-color: #696969;
+}
+.red {
+  color:red
+}
+span {
+  color: grey;
+}
+.disable {
+  background-color: #222222;
+}
+
+

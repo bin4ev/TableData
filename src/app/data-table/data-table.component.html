@@ -1,0 +1,16 @@
+
+<table>
+    <app-checkbox class="checkbox" [state] = "checkState()"
+    (changeState)="onChangeState($event)"></app-checkbox>
+    <tr>
+        <th [ngClass] = "obj?.headerClass" *ngFor="let obj of columns" >{{obj.name}}</th>
+    </tr>
+    <tr #tr *ngFor="let r of arrRows; let rowId = index" (click)="selectRow($event,rowId)">
+        <td [ngClass] = "obj?.cellClass" *ngFor="let obj of columns "></td>
+    </tr>
+</table>
+<div class="btn-wrap">
+    <span>страница {{countPage}}</span>
+    <button #button  (click) ="prevPege()"><</button>
+    <button #button (click) ="nextPage()">></button>
+</div>
