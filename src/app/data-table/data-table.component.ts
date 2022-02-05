@@ -1,4 +1,14 @@
-import { Component, OnInit, Input, ElementRef, ViewChildren, QueryList, Output, EventEmitter } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  Input,
+  ViewChildren,
+  QueryList,
+  Output,
+  EventEmitter,
+  TrackByFunction,
+} from '@angular/core';
+
 
 @Component({
   selector: 'data-table',
@@ -18,6 +28,7 @@ export class DataTableComponent implements OnInit {
   @Input() canSelect = false
   @Input() dataFunction!: Function
   @Input() multiple!: boolean
+  @Input() identity!: TrackByFunction<any>
 
   @Output() lineSelected = new EventEmitter()
 
@@ -27,100 +38,92 @@ export class DataTableComponent implements OnInit {
   increaseData: boolean = true
   countPage = 1
   start: number = 0
+  arrRows: any = []
   end!: number
-  arrRows = new Array(this.rows)
   isSelected: boolean = false
   selectedEl: any
   btnPresssed: boolean = false
-  data = []
+  data: any = []
   prevBtn: any
   nextBtn: any
-  lineInfo = {}
   tdArr: any
-  rowIdArr: any = []
+  selectedRows: any = []
+  allSelectedArr: any = []
   allSelected = new Set<any>()
+  allFormatFunc!: any
+  route: any = {
+    'percent': this.percent,
+    'tax': this.tax,
+    'currency': this.currency,
+    'time': this.time,
+    'number': this.number,
+    'num': this.formatNum,
+    'date': this.date,
+    'int': this.int,
+  }
 
-  ngOnInit(): void {
-    this.arrRows = new Array(this.rows)
+
+  ngOnInit() {
     this.end = this.rows
-    this.fillRows()
+    this.getData()
+    this.allFormatFunc = { ...this.route, ...this.config.format }
+    for (let col of this.columns) {
+      this.initCol(col)
+    }
+
   }
 
   ngAfterViewInit() {
-    this.tdArr = this.tdList.toArray()
-    this.fillRows()
+    this.tdList.changes.subscribe(data => this.tdArr = data.toArray())
     let btns = this.btnsList.toArray()
     this.prevBtn = btns[0].nativeElement
     this.nextBtn = btns[1].nativeElement
     this.disableBtn(this.prevBtn)
   }
 
-  async fill(data: []) {
-    this.data = data
-    for (let i = 0; i < this.tdArr.length; i++) {
-      let dataObj = data[i]
-      let row = this.tdArr[i].nativeElement.children
-      if (dataObj && this.increaseData) {
-        this.length++
-      }
-
-      for (let k = 0; k < row.length; k++) {
-        let td = row[k]
-        if (!dataObj) {
-          td.textContent = ''
-          this.lastPage = true
-          this.disableBtn(this.nextBtn)
-          continue
-        }
-
-        this.lastPage = false
-        let c = this.columns[k]
-        let value
-        let type = this.checkType(c.property)
-        if (type == 'function') {
-          value = c.property(dataObj)
-        } else {
-          value = dataObj[c.property]
-        }
-
-        if (c.valueClass) {
-          this.addValueClass(c, td, value)
-        }
-        if (c.textFn) {
-          value = c.textFn(value)
-        }// 
-        td.innerHTML = await this.formatValue(c, value)
-
-      }
-    }
+  async getData() {
+    this.arrRows = await this.dataFunction(this.start, this.end)
   }
 
-  fillRows() {
-    let result = this.dataFunction(this.start, this.end)
-    if (!(result instanceof Promise)) {
-      result = Promise.resolve(result)
+  initCol(col: any) {
+    if (typeof col.property == 'function') {
+      col.valueFn = col.property
+    } else {
+      col.valueFn = (d: any) => d[col.property]
     }
-    result.then((data: any) => {
-      this.fill(data)
-    })
-      .then(() => {
-        if (this.lastPage) {
-          this.disableBtn(this.nextBtn)
-        }
-        if (this.countPage == 1) {
-          this.disableBtn(this.prevBtn)
-        }
-      })
+
+    if (this.allFormatFunc[col.format]) {
+      let formatFn = this.allFormatFunc[col.format]
+      col.formatFn = formatFn
+    }
+
+    if (col.format) {
+      col.formatFn = (v: any) => this.formatFunc(col, v)
+    } else {
+      col.formatFn = (d: any) => d
+    }
+
   }
 
-  checkType<T>(v: T): string {
-    return typeof v
+  getCellText(data: any, col: any) {
+    let value = col.valueFn(data)
+    return col.formatFn(value)
   }
 
   onSelect(rowId: any) {
-    let obj = this.data[rowId]
-    this.rowIdArr.push(obj)
-    this.lineSelected.emit(...this.rowIdArr)
+    this.selectedRows.push(rowId)
+    let obj = this.arrRows[rowId]
+    this.lineSelected.emit(obj)
+  }
+
+  async deleteRow() {
+    let start = this.end
+    let end = start + this.selectedRows.length
+    let newData = await this.dataFunction(start, end)
+    this.arrRows = this.arrRows.filter((x: any, i: number) => !this.allSelected.has(i))
+    this.arrRows = this.arrRows.concat(newData)
+    this.allSelected.clear()
+    this.selectedRows = []
   }
 
   addValueClass(c: any, td: any, val: string): void {
@@ -133,34 +136,12 @@ export class DataTableComponent implements OnInit {
     }
   }
 
-  formatValue(c: any, val: string) {
-    let res
-    let route: any = {
-      'percent': this.percent,
-      'tax': this.tax,
-      'currency': this.currency,
-      'time': this.time,
-      'number': this.number,
-      'num': this.formatNum,
-      'date': this.date,
-      'int': this.int,
-    }
-    let allFormatFunc = Object.assign({}, route, this.config.format)
-
-    if (allFormatFunc[c.property]) {
-      let formatFunc = allFormatFunc[c.property]
-      res = formatFunc(c.property)
-    }
-
-    if (c.format) {
-      let [f, arg] = c.format.split(':')
-
-      let func = allFormatFunc[f]
-      res = func(val, arg)
-    }
-
-    return res || val
+  formatFunc(c: any, val: any) {
+    let [f, arg] = c.format.split(':')
+    let func = this.allFormatFunc[f]
+    return func(val, arg)
   }
+
 
   percent(val: number, digit: number) {
     return val.toFixed(digit) + '%'
@@ -191,16 +172,17 @@ export class DataTableComponent implements OnInit {
     return type == 'short' ? date.toDateString() : date.toLocaleDateString();
   }
 
-  async currency(val: string, type: string) {
-    let res = await fetch('http://api.exchangeratesapi.io/v1/latest?access_key=11f8779054d1f07eb593dabb70c2de31')
-    let data = await res.json()
-    return type + (Number(val) * data.rates[type]).toFixed(2)
+  currency(val: string, type: string) {
+    /*   let res = await fetch('http://api.exchangeratesapi.io/v1/latest?access_key=11f8779054d1f07eb593dabb70c2de31')
+      let data = await res.json()
+      return type + (Number(val) * data.rates[type]).toFixed(2) */
+    return type + val
   }
 
   initKeyEvent(e: any) {
-    /*   e.preventDefault()
-      this.checkEventKeys(e)
-      if (!this.btnPresssed) {
+    e.preventDefault()
+    this.checkEventKeys(e)
+    /*   if (!this.btnPresssed) {
         return
       }
   
@@ -223,8 +205,11 @@ export class DataTableComponent implements OnInit {
       } */
   }
 
-  checkEventKeys(e: any) {
+  async checkEventKeys(e: any) {
     switch (e.key) {
+      case 'Delete':
+        this.deleteRow()
+        break
       case 'PageDown':
         this.prevPege()
         break;
@@ -238,8 +223,8 @@ export class DataTableComponent implements OnInit {
         this.increaseData = false
         this.disableBtn(this.prevBtn)
         this.enableBtn(this.nextBtn)
-        this.data = this.dataFunction(this.start, this.end)
-        this.fillRows()
+        this.arrRows = await this.dataFunction(this.start, this.end)
+
         break;
       case 'End':
         this.end = this.length
@@ -248,8 +233,8 @@ export class DataTableComponent implements OnInit {
         this.increaseData = false
         this.disableBtn(this.nextBtn)
         this.enableBtn(this.prevBtn)
-        this.data = this.dataFunction(this.start, this.end)
-        this.fillRows()
+        this.arrRows = this.dataFunction(this.start, this.end)
+
         break;
       default:
         break;
@@ -266,7 +251,7 @@ export class DataTableComponent implements OnInit {
     b.classList.remove('disable')
   }
 
-  nextPage() {
+  async nextPage() {
     if (this.lastPage) {
       return
     }
@@ -279,12 +264,12 @@ export class DataTableComponent implements OnInit {
     this.countPage++
     this.start += this.rows
     this.end += this.rows
-    this.data = this.dataFunction(this.start, this.end)
-    this.fillRows()
+    this.arrRows = await this.dataFunction(this.start, this.end)
+
     this.onChangeState('unselect')
   }
 
-  prevPege() {
+  async prevPege() {
     if (this.countPage == 1) {
       return
     }
@@ -299,9 +284,9 @@ export class DataTableComponent implements OnInit {
       this.disableBtn(this.prevBtn)
     }
     this.start -= this.rows,
-      this.end -= this.rows
-    this.data = this.dataFunction(this.start, this.end)
-    this.fillRows()
+    this.end -= this.rows
+    this.arrRows = await this.dataFunction(this.start, this.end)
+
     this.onChangeState('unselect')
   }
 
@@ -312,17 +297,29 @@ export class DataTableComponent implements OnInit {
     }
 
     this.btnPresssed = true
-    this.select(e.currentTarget, this.config.selectedRowClass)
-    this.onSelect(rowId)
+    this.select(e.currentTarget, this.config.selectedRowClass, rowId)
   }
 
-  private select(target: any, className: string): void {
+  private select(target: any, className: string, rowId: any): void {
     if (target.classList.contains(className)) {
-      this.removeFromSelected(target)
+      this.removeFromSelected(target, rowId)
+      this.selectedRows.splice(rowId, 1)
       return
     }
 
-    this.addToSelected(target)
+    if (this.multiple) {
+      this.addToSelected(target, rowId)
+      this.onSelect(rowId)
+      return
+    }
+
+    if (this.selectedEl) {
+      this.removeFromSelected(this.selectedEl, rowId)
+      this.selectedRows = []
+    }
+    this.selectedEl = target
+    this.addToSelected(target, rowId)
+    this.onSelect(rowId)
   }
 
   checkState(): any {
@@ -333,7 +330,7 @@ export class DataTableComponent implements OnInit {
       return 1
     }
 
-    if (this.allSelected.size == this.data.length) {
+    if (this.allSelected.size == this.arrRows.length) {
       return 0
     }
   }
@@ -341,24 +338,28 @@ export class DataTableComponent implements OnInit {
   onChangeState(state: string) {
     let setState = state == 'selected' ? this.addToSelected : this.removeFromSelected
     setState = setState.bind(this)
-    for (let r of this.tdArr) {
-      setState(r.nativeElement)
+    for (let i in this.tdArr) {
+      setState(this.tdArr[Number(i)].nativeElement, Number(i))
     }
   }
 
-  removeFromSelected(el: any) {
+  removeFromSelected(el: any, i: number) {
     if (el.classList.contains(this.config.selectedRowClass)) {
       el.classList.remove(this.config.selectedRowClass)
-      let tdCheckBox = el.firstElementChild
-      tdCheckBox.firstElementChild.checked = false
-      this.allSelected.delete(el)
+      if (this.multiple) {
+        let tdCheckBox = el.firstElementChild
+        tdCheckBox.firstElementChild.checked = false
+      }
+      this.allSelected.delete(i)
     }
   }
 
-  addToSelected(el: any) {
-    let tdCheckBox = el.firstElementChild
-    tdCheckBox.firstElementChild.checked = true
+  addToSelected(el: any, i: number) {
+    if (this.multiple) {
+      let tdCheckBox = el.firstElementChild
+      tdCheckBox.firstElementChild.checked = true
+    }
     el.classList.add(this.config.selectedRowClass)
-    this.allSelected.add(el)
+    this.allSelected.add(i)
   }
 }

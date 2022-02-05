@@ -11,7 +11,7 @@ import { CheckboxComponent } from './checkbox/checkbox.component';
   declarations: [
     AppComponent,
     DataTableComponent,
-    CheckboxComponent
+    CheckboxComponent,
   ],
   imports: [
     BrowserModule,

@@ -6,13 +6,11 @@ import { Component } from '@angular/core';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  rows = 7
+  rows = 5
   canSelect = true
+  identityFun = (idx: number, data:any) => data.name
 
   tableColumns = [
-    {
-      property: 'checkbox'
-    },
     {
       name: 'Име и тегло',
       property: (data: any) => data['name'] + " " + data['mass'],
@@ -56,17 +54,16 @@ export class AppComponent {
       name: "Цвят на кожата",
       headerClass: "bold",
       cellClass: "left",
-    
+
     }
-   ]
+  ]
   tableConfig = {
     'columns': this.tableColumns,
     'showHeader': true,
-    'rows': 10,
+    'rows': 5,
     'format': {
-      checkbox: () => `<input type = checkbox>`,
       toUperCase: (value: any) => value.toUpperCase(),
-      kg: (val:any) => val + 'kg'
+      kg: (val: any) => val + 'kg'
     },
     'canSelect': true,
     'selectedRowClass': 'selected-row',
@@ -78,14 +75,16 @@ export class AppComponent {
 
   constructor() {
     this.tableDataFunction = function dataFunc(pos: number, count: number) {
-      return fetch('https://swapi.py4e.com/api/people')
+      return fetch('https://swapi.py4e.com/api/people/')
         .then(res => res.json())
         .then(r => r.results.slice(pos, count))
     }
   }
 
-  lineSelected(...target: any) {
-    console.log('selectedRowData:', ...target)
+  lineSelected(target: any) {
+
+    console.log(target);
+
   }
 
   getRowClass(line: any) {

@@ -1,5 +1,6 @@
 <div class="wrap-table">
-  <data-table [multiple]="true" [rows]="rows" class="diffTop" [columns]="tableColumns"
+  <data-table [multiple]="true" [rows]="rows" [identity] ="identityFun"
+   class="diffTop" [columns]="tableColumns"
    [config] = "tableConfig"
    [dataFunction] = "tableDataFunction"
    [canSelect] ="canSelect"
