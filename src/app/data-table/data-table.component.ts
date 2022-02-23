@@ -284,7 +284,7 @@ export class DataTableComponent implements OnInit {
       this.disableBtn(this.prevBtn)
     }
     this.start -= this.rows,
-    this.end -= this.rows
+      this.end -= this.rows
     this.arrRows = await this.dataFunction(this.start, this.end)
 
     this.onChangeState('unselect')
