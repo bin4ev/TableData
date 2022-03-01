@@ -1,11 +1,13 @@
 <table>
     <tr>
-        <th *ngIf="multiple"> <app-checkbox class="checkbox" [state] = "checkState()"
+        <th *ngIf="multiple">
+            <app-checkbox class="checkbox" [state] = "checkState()"
             (changeState)="onChangeState($event)"> 
-        </app-checkbox></th>
+            </app-checkbox>
+    </th>
         <th [ngClass] = "obj?.headerClass" *ngFor="let obj of columns" >{{obj.name}}</th>
     </tr>
-    <tbody >
+    <tbody [@fadeInOut] = 'loadingState'>
         <tr #tr *ngFor="let data of arrRows ; let rowId = index; trackBy:identity" (click)="selectRow($event,rowId)">
             <td *ngIf="multiple"><input type="checkBox"></td>
             <td [ngClass]= "col?.cellClass" *ngFor="let col of columns "

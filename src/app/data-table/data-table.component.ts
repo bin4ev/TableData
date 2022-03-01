@@ -1,3 +1,4 @@
+import { animate, state, style, transition, trigger } from '@angular/animations';
 import {
   Component,
   OnInit,
@@ -7,16 +8,32 @@ import {
   Output,
   EventEmitter,
   TrackByFunction,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  ApplicationRef,
 } from '@angular/core';
-
 
 @Component({
   selector: 'data-table',
   templateUrl: './data-table.component.html',
   styleUrls: ['./data-table.component.css'],
+  animations: [
+    trigger('fadeInOut', [
+      state('false', style({
+        opacity: 1
+      })),
+      state('true', style({
+        opacity: 0.5
+      })),
+      transition('* => *', [
+        animate('300ms')
+      ])
+    ])
+  ],
   host: {
     '(document:keydown)': 'initKeyEvent($event)'
   },
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DataTableComponent implements OnInit {
   @ViewChildren('button') btnsList!: QueryList<any>
@@ -61,7 +78,11 @@ export class DataTableComponent implements OnInit {
     'date': this.date,
     'int': this.int,
   }
+  loadingState = true
 
+
+  constructor(private changeDetector: ChangeDetectorRef, private applRef: ApplicationRef) {
+  }
 
   ngOnInit() {
     this.end = this.rows
@@ -70,7 +91,6 @@ export class DataTableComponent implements OnInit {
     for (let col of this.columns) {
       this.initCol(col)
     }
-
   }
 
   ngAfterViewInit() {
@@ -81,8 +101,15 @@ export class DataTableComponent implements OnInit {
     this.disableBtn(this.prevBtn)
   }
 
-  async getData() {
-    this.arrRows = await this.dataFunction(this.start, this.end)
+  getData() {
+    this.loadingState = true
+    this.dataFunction(this.start, this.end).then((d: any) => {
+      this.loadingState = false
+      setTimeout(() => {
+        this.arrRows = d
+        this.changeDetector.detectChanges()
+      }, 300);
+    })
   }
 
   initCol(col: any) {
@@ -124,6 +151,7 @@ export class DataTableComponent implements OnInit {
     this.arrRows = this.arrRows.concat(newData)
     this.allSelected.clear()
     this.selectedRows = []
+    this.changeDetector.detectChanges()
   }
 
   addValueClass(c: any, td: any, val: string): void {
@@ -251,7 +279,7 @@ export class DataTableComponent implements OnInit {
     b.classList.remove('disable')
   }
 
-  async nextPage() {
+   nextPage() {
     if (this.lastPage) {
       return
     }
@@ -264,15 +292,20 @@ export class DataTableComponent implements OnInit {
     this.countPage++
     this.start += this.rows
     this.end += this.rows
-    this.arrRows = await this.dataFunction(this.start, this.end)
-
+    this.getData()
+    this.changeDetector.detectChanges()
     this.onChangeState('unselect')
   }
 
-  async prevPege() {
+   prevPege() {
     if (this.countPage == 1) {
       return
     }
+
+    this.start -= this.rows,
+    this.end -= this.rows
+    this.getData()
+    this.onChangeState('unselect')
 
     if (this.nextBtn.disabled) {
       this.enableBtn(this.nextBtn)
@@ -283,11 +316,7 @@ export class DataTableComponent implements OnInit {
     if (this.countPage == 1) {
       this.disableBtn(this.prevBtn)
     }
-    this.start -= this.rows,
-      this.end -= this.rows
-    this.arrRows = await this.dataFunction(this.start, this.end)
 
-    this.onChangeState('unselect')
   }
 
 
@@ -295,7 +324,7 @@ export class DataTableComponent implements OnInit {
     if (!this.canSelect) {
       return
     }
-
+    this.changeDetector.reattach()
     this.btnPresssed = true
     this.select(e.currentTarget, this.config.selectedRowClass, rowId)
   }

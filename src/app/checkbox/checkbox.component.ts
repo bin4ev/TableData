@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { faCheck, faMinus } from '@fortawesome/free-solid-svg-icons';
 
 enum States { selected, unselected, undetermined }
@@ -6,7 +6,8 @@ enum States { selected, unselected, undetermined }
 @Component({
   selector: 'app-checkbox',
   templateUrl: './checkbox.component.html',
-  styleUrls: ['./checkbox.component.css']
+  styleUrls: ['./checkbox.component.css'],
+/*   changeDetection: ChangeDetectionStrategy.OnPush */
 })
 export class CheckboxComponent {
   States = States
@@ -18,8 +19,11 @@ export class CheckboxComponent {
 
   icons = [faCheck, faMinus, '']
   value: any
+
+  constructor(private changeDetector: ChangeDetectorRef){
+  }
  
-  ngOnChanges() {
+  ngOnChanges() {    
     if (!this.disabled) {
       this.value = this.icons[this.state]
     }
